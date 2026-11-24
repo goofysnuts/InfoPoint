@@ -63,12 +63,13 @@ struct SettingsView: View {
                     Section {
                         ForEach(model.pending) { p in
                             LabeledContent(model.device(p.deviceId)?.name ?? "Gerät",
-                                           value: model.template(p.templateId)?.name ?? "Vorlage")
+                                           value: [model.template(p.templateId)?.name, p.ui != nil ? "Darstellung" : nil]
+                                               .compactMap { $0 }.joined(separator: " + "))
                         }
                     } header: {
                         Text("Wartet auf den Server")
                     } footer: {
-                        Text("Offline übertragene Vorlagen meldet die App automatisch, sobald der Server erreichbar ist.")
+                        Text("Offline übertragene Vorlagen und Darstellungen meldet die App automatisch, sobald der Server erreichbar ist.")
                     }
                 }
 

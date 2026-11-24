@@ -12,6 +12,10 @@ struct DeviceDetailView: View {
     @State private var checked = false
     @State private var ipText = ""
     @State private var job: TransferJob?
+    @State private var ui = UiSettings()
+    @State private var uiBusy = false
+    @State private var uiMessage: String?
+    @State private var uiError: String?
 
     var body: some View {
         if let d = model.device(deviceId) {
@@ -24,6 +28,7 @@ struct DeviceDetailView: View {
     private func content(_ d: DeviceInfo) -> some View {
         Form {
             statusSection(d)
+            appearanceSection(d)
             templateSection(d)
 
             Section {
@@ -66,6 +71,7 @@ struct DeviceDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task(id: deviceId) {
             if selected == nil { selected = d.templateId }
+            ui = d.ui ?? UiSettings()
             ipText = model.manualIPs[d.id] ?? ""
             await check(d)
         }
@@ -105,6 +111,99 @@ struct DeviceDetailView: View {
                     .font(.footnote)
                     .foregroundStyle(.orange)
             }
+        }
+    }
+
+    // ── Darstellung ─────────────────────────────────────────────────────────
+    private func appearanceSection(_ d: DeviceInfo) -> some View {
+        let dirty = ui != (d.ui ?? UiSettings())
+        return Section {
+            NavigationLink {
+                PalettePicker(selection: $ui.palette)
+            } label: {
+                LabeledContent("Design") {
+                    HStack(spacing: 8) {
+                        PaletteChip(palette: Palettes.all[min(max(ui.palette, 0), Palettes.all.count - 1)], size: 22)
+                        Text(Palettes.name(ui.palette))
+                    }
+                }
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                LabeledContent("Helligkeit") {
+                    Text("\(ui.bright) %").monospacedDigit()
+                }
+                Slider(value: intSlider(\.bright), in: 5...100, step: 5) {
+                    Text("Helligkeit")
+                } minimumValueLabel: {
+                    Image(systemName: "sun.min")
+                } maximumValueLabel: {
+                    Image(systemName: "sun.max")
+                }
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                LabeledContent("Im Bildschirmschoner") {
+                    Text("\(ui.dim) %").monospacedDigit()
+                }
+                Slider(value: intSlider(\.dim), in: 0...100, step: 5) {
+                    Text("Helligkeit im Bildschirmschoner")
+                } minimumValueLabel: {
+                    Image(systemName: "moon")
+                } maximumValueLabel: {
+                    Image(systemName: "sun.max")
+                }
+            }
+            Picker("Bildschirmschoner nach", selection: $ui.saver) {
+                ForEach(SaverOptions.all, id: \.0) { opt in
+                    Text(opt.1).tag(opt.0)
+                }
+            }
+            if dirty || uiBusy {
+                Button {
+                    applyUi(d)
+                } label: {
+                    HStack {
+                        Text("Darstellung übernehmen").fontWeight(.semibold)
+                        Spacer()
+                        if uiBusy { ProgressView() }
+                    }
+                }
+                .disabled(uiBusy)
+            }
+            if let uiError {
+                Label(uiError, systemImage: "exclamationmark.triangle.fill")
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            } else if let uiMessage {
+                Label(uiMessage, systemImage: "checkmark.circle.fill")
+                    .font(.footnote)
+                    .foregroundStyle(.green)
+            }
+        } header: {
+            Text("Darstellung")
+        } footer: {
+            Text("Wird direkt ans Display gesendet, wenn es im WLAN ist (es startet kurz neu) – sonst über den Server.")
+        }
+    }
+
+    private func intSlider(_ key: WritableKeyPath<UiSettings, Int>) -> Binding<Double> {
+        Binding(get: { Double(ui[keyPath: key]) }, set: { ui[keyPath: key] = Int($0.rounded()) })
+    }
+
+    private func applyUi(_ d: DeviceInfo) {
+        uiBusy = true
+        uiError = nil
+        uiMessage = nil
+        let wanted = ui
+        Task {
+            do {
+                switch try await model.applyUi(wanted, to: d) {
+                case .display: uiMessage = "Ans Display gesendet."
+                case .server: uiMessage = "Gespeichert – das Display übernimmt es beim nächsten Abruf (≤ 20 s)."
+                }
+            } catch {
+                uiError = error.localizedDescription
+            }
+            uiBusy = false
         }
     }
 
@@ -297,5 +396,87 @@ private struct StepRow: View {
         case .failed:
             Image(systemName: "xmark.circle.fill").foregroundStyle(.red)
         }
+    }
+}
+
+// ── Design-Auswahl ──────────────────────────────────────────────────────────
+struct PaletteChip: View {
+    let palette: Palette
+    var size: CGFloat = 44
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
+            .fill(palette.bg)
+            .overlay {
+                RoundedRectangle(cornerRadius: size * 0.14, style: .continuous)
+                    .fill(palette.card)
+                    .padding(size * 0.16)
+                    .overlay(alignment: .leading) {
+                        Capsule()
+                            .fill(palette.accent)
+                            .frame(width: size * 0.36, height: max(2, size * 0.1))
+                            .padding(.leading, size * 0.26)
+                    }
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
+            }
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+}
+
+struct PalettePicker: View {
+    @Binding var selection: Int
+    @Environment(\.dismiss) private var dismiss
+
+    private let columns = [GridItem(.adaptive(minimum: 92), spacing: 12)]
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                ForEach(Palettes.groups, id: \.0) { group in
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(group.0)
+                            .font(.headline)
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            ForEach(group.1, id: \.self) { i in
+                                let p = Palettes.all[i]
+                                Button {
+                                    selection = i
+                                    dismiss()
+                                } label: {
+                                    VStack(spacing: 6) {
+                                        PaletteChip(palette: p, size: 64)
+                                            .overlay(alignment: .topTrailing) {
+                                                if selection == i {
+                                                    Image(systemName: "checkmark.circle.fill")
+                                                        .symbolRenderingMode(.palette)
+                                                        .foregroundStyle(.white, Color.accentColor)
+                                                        .font(.title3)
+                                                        .offset(x: 6, y: -6)
+                                                }
+                                            }
+                                        Text(p.shortName)
+                                            .font(.caption)
+                                            .foregroundStyle(.primary)
+                                            .lineLimit(1)
+                                    }
+                                    .frame(maxWidth: .infinity, minHeight: 92)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(p.name)
+                                .accessibilityAddTraits(selection == i ? .isSelected : [])
+                            }
+                        }
+                    }
+                }
+            }
+            .padding()
+        }
+        .navigationTitle("Design")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

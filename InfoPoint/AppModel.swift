@@ -7,7 +7,6 @@ let refreshTaskId = "de.infopoint.app.sync"
 @MainActor
 @Observable
 final class AppModel {
-
     // letzter Stand vom Server (bleibt offline verfügbar)
     var data: SyncData?
     // Firmwares, die tatsächlich in der App liegen (id → Stand)
@@ -20,15 +19,14 @@ final class AppModel {
     var syncing = false
     var syncError: String?
 
-    var serverURL: String { didSet { defaults.set(serverURL, forKey: "serverURL"); resetClient() } }
-    var username: String { didSet { defaults.set(username, forKey: "username"); resetClient() } }
-    var allowSelfSigned: Bool { didSet { defaults.set(allowSelfSigned, forKey: "allowSelfSigned"); resetClient() } }
-    var manualIPs: [String: String] { didSet { defaults.set(manualIPs, forKey: "manualIPs") } }
+    var serverURL: String { didSet { UserDefaults.standard.set(serverURL, forKey: "serverURL"); resetClient() } }
+    var username: String { didSet { UserDefaults.standard.set(username, forKey: "username"); resetClient() } }
+    var allowSelfSigned: Bool { didSet { UserDefaults.standard.set(allowSelfSigned, forKey: "allowSelfSigned"); resetClient() } }
+    var manualIPs: [String: String] { didSet { UserDefaults.standard.set(manualIPs, forKey: "manualIPs") } }
     var hasPassword: Bool
 
     let discovery = Discovery()
 
-    @ObservationIgnored private let defaults = UserDefaults.standard
     @ObservationIgnored private var client: ServerClient?
 
     init() {
@@ -46,6 +44,7 @@ final class AppModel {
     }
 
     var isLoggedIn: Bool { !serverURL.isEmpty && !username.isEmpty && hasPassword }
+    var online: Bool { serverReachable == true }
 
     // ── Server ──────────────────────────────────────────────────────────────
     private func resetClient() {
@@ -53,12 +52,25 @@ final class AppModel {
         client = nil
     }
 
-    private func currentClient() -> ServerClient? {
+    func api() -> ServerClient? {
         if let client { return client }
         guard let url = URL(string: serverURL), let pw = Keychain.get("password") else { return nil }
         let c = ServerClient(baseURL: url, allowSelfSigned: allowSelfSigned, username: username, password: pw)
         client = c
         return c
+    }
+
+    // Server-Aufruf für die Oberfläche: kein Server → verständlicher Fehler
+    func withServer<T>(_ work: (ServerClient) async throws -> T) async throws -> T {
+        guard let c = api() else { throw AppError.message("Nicht angemeldet") }
+        do {
+            let r = try await work(c)
+            serverReachable = true
+            return r
+        } catch let e as URLError {
+            serverReachable = false
+            throw AppError.message("Server nicht erreichbar (\(e.localizedDescription))")
+        }
     }
 
     static func normalize(_ raw: String) -> String {
@@ -71,14 +83,14 @@ final class AppModel {
     func login(server: String, user: String, password: String, selfSigned: Bool) async throws {
         let s = Self.normalize(server)
         guard let url = URL(string: s), url.host != nil else { throw AppError.message("Server-Adresse ungültig") }
-        let c = ServerClient(baseURL: url, allowSelfSigned: selfSigned,
-                             username: user.trimmingCharacters(in: .whitespaces), password: password)
+        let name = user.trimmingCharacters(in: .whitespaces)
+        let c = ServerClient(baseURL: url, allowSelfSigned: selfSigned, username: name, password: password)
         try await c.login()
         c.invalidate()
         Keychain.set(password, for: "password")
         hasPassword = true
         serverURL = s
-        username = user.trimmingCharacters(in: .whitespaces)
+        username = name
         allowSelfSigned = selfSigned
         await syncNow()
     }
@@ -94,23 +106,25 @@ final class AppModel {
         lastSync = nil
         serverReachable = nil
         Store.wipe()
-        defaults.removeObject(forKey: "lastSync")
+        UserDefaults.standard.removeObject(forKey: "lastSync")
     }
 
     // Abgleich: offene Meldungen nachreichen, Stand holen, neue Firmwares laden
     func syncNow() async {
-        guard !syncing, let c = currentClient() else { return }
+        guard !syncing, let c = api() else { return }
         syncing = true
         defer { syncing = false }
         do {
             await replayPending(c)
-            let s = try await c.sync()
+            var s = try await c.sync()
+            // noch nicht gemeldete Änderungen bleiben in der Anzeige sichtbar
+            for p in pending { Self.overlay(p, on: &s) }
             data = s
             Store.save(s, "sync.json")
             serverReachable = true
             syncError = nil
             lastSync = Date()
-            defaults.set(lastSync, forKey: "lastSync")
+            UserDefaults.standard.set(lastSync, forKey: "lastSync")
             await downloadFirmwares(c, s.firmwares)
         } catch {
             serverReachable = !(error is URLError)
@@ -121,7 +135,7 @@ final class AppModel {
     private func replayPending(_ c: ServerClient) async {
         for p in pending {
             do {
-                try await c.reportApply(p)
+                try await c.report(p)
                 pending.removeAll { $0.id == p.id }
             } catch AppError.http(let code, _) where (400..<500).contains(code) && code != 401 {
                 pending.removeAll { $0.id == p.id }   // Gerät/Vorlage gibt es nicht mehr
@@ -162,12 +176,14 @@ final class AppModel {
     // ── Hilfen für die Oberfläche ──────────────────────────────────────────
     var devices: [DeviceInfo] { (data?.devices ?? []).sorted { $0.name.localizedCompare($1.name) == .orderedAscending } }
     var templates: [TemplateInfo] { (data?.templates ?? []).sorted { $0.name.localizedCompare($1.name) == .orderedAscending } }
+    var catalog: [CatalogEntry] { data?.catalog ?? [] }
 
     func device(_ id: String) -> DeviceInfo? { data?.devices.first { $0.id == id } }
     func template(_ id: String?) -> TemplateInfo? { data?.templates.first { $0.id == id } }
+    func catalogEntry(_ id: String) -> CatalogEntry? { catalog.first { $0.id == id } }
 
     func firmwareName(_ id: String) -> String {
-        cached[id]?.name ?? data?.firmwares.first { $0.id == id }?.name ?? id
+        catalogEntry(id)?.name ?? cached[id]?.name ?? data?.firmwares.first { $0.id == id }?.name ?? id
     }
 
     func pendingCount(for deviceId: String) -> Int { pending.filter { $0.deviceId == deviceId }.count }
@@ -192,17 +208,85 @@ final class AppModel {
         return nil
     }
 
-    // nach einer Übertragung den lokalen Stand anpassen (bis der Server bestätigt)
-    func noteApplied(deviceId: String, template t: TemplateInfo, rev: Int) {
-        guard var s = data, let i = s.devices.firstIndex(where: { $0.id == deviceId }) else { return }
-        s.devices[i].templateId = t.id
-        s.devices[i].templateName = t.name
-        s.devices[i].firmware = t.firmware
-        s.devices[i].rev = rev
+    // Konfiguration für ein Gerät mit Vorlage, aktueller Darstellung und Revision
+    func configBody(device d: DeviceInfo, templateId: String, ui: UiSettings?, rev: Int) throws -> Data {
+        guard case .object(var config)? = d.configs[templateId] else {
+            throw AppError.message("Für dieses Gerät fehlt die Konfiguration. Ist ihm im Server ein WLAN zugeordnet? Danach einmal abgleichen.")
+        }
+        if let ui { config["ui"] = ui.json }
+        config["rev"] = .int(rev)
+        return try JSONEncoder().encode(config)
+    }
+
+    func nextRev(_ d: DeviceInfo, displayRev: Int) -> Int {
+        max(d.rev, displayRev, d.lastSeen?.rev ?? 0) + 1
+    }
+
+    // Änderung lokal übernehmen und für den Server vormerken
+    func record(_ p: PendingApply) {
+        guard var s = data else { return }
+        Self.overlay(p, on: &s)
         data = s
         Store.save(s, "sync.json")
-        pending.removeAll { $0.deviceId == deviceId }
-        pending.append(PendingApply(deviceId: deviceId, templateId: t.id, rev: rev))
+        // ältere offene Meldungen desselben Geräts zusammenführen
+        var merged = p
+        for old in pending where old.deviceId == p.deviceId {
+            if merged.templateId == nil { merged.templateId = old.templateId }
+            if merged.ui == nil { merged.ui = old.ui }
+        }
+        pending.removeAll { $0.deviceId == p.deviceId }
+        pending.append(merged)
         Store.save(pending, "pending.json")
+    }
+
+    private static func overlay(_ p: PendingApply, on s: inout SyncData) {
+        guard let i = s.devices.firstIndex(where: { $0.id == p.deviceId }) else { return }
+        if let tid = p.templateId, let t = s.templates.first(where: { $0.id == tid }) {
+            s.devices[i].templateId = t.id
+            s.devices[i].templateName = t.name
+            s.devices[i].firmware = t.firmware
+        }
+        if let ui = p.ui { s.devices[i].ui = ui }
+        if let rev = p.rev { s.devices[i].rev = max(s.devices[i].rev, rev) }
+    }
+
+    // Darstellung ändern: direkt ans Display, sonst über den Server
+    enum UiResult { case display, server }
+
+    func applyUi(_ ui: UiSettings, to d: DeviceInfo) async throws -> UiResult {
+        if let tid = d.templateId, d.configs[tid] != nil, let reached = await reach(d) {
+            let rev = nextRev(d, displayRev: reached.1.rev)
+            let body = try configBody(device: d, templateId: tid, ui: ui, rev: rev)
+            try await DisplayClient(base: reached.0).sendConfig(body, token: d.token)
+            record(PendingApply(deviceId: d.id, templateId: nil, ui: ui, rev: rev))
+            Task { await syncNow() }
+            return .display
+        }
+        // Display nicht im WLAN: der Server gibt die Änderung beim nächsten Abruf weiter
+        try await withServer { c in
+            try await c.report(PendingApply(deviceId: d.id, templateId: nil, ui: ui, rev: nil))
+        }
+        record(PendingApply(deviceId: d.id, templateId: nil, ui: ui, rev: nil))
+        pending.removeAll { $0.deviceId == d.id && $0.templateId == nil && $0.rev == nil }
+        Store.save(pending, "pending.json")
+        await syncNow()
+        return .server
+    }
+
+    // ── Vorlagen (brauchen den Server) ──────────────────────────────────────
+    func createTemplate(name: String, firmware: String, members: [String]) async throws -> String {
+        let id = try await withServer { try await $0.createTemplate(name: name, firmware: firmware, members: members) }
+        await syncNow()
+        return id
+    }
+
+    func saveTemplate(id: String, name: String, app: JSONValue) async throws {
+        try await withServer { try await $0.updateTemplate(id: id, name: name, app: app) }
+        await syncNow()
+    }
+
+    func deleteTemplate(id: String) async throws {
+        try await withServer { try await $0.deleteTemplate(id: id) }
+        await syncNow()
     }
 }

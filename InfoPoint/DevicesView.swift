@@ -27,9 +27,9 @@ struct DevicesView: View {
                             }
                         }
                     } header: {
-                        Text("Meine Displays")
+                        Text("Meine Geräte")
                     } footer: {
-                        Text("Geräte, Vorlagen und WLAN-Zugänge legst du in der WebApp an. Die App überträgt sie direkt im WLAN.")
+                        Text("Geräte und WLAN-Zugänge legst du in der WebApp an. Vorlagen, Design und Helligkeit überträgt die App direkt im WLAN – auch ohne Server.")
                     }
                 }
 
@@ -44,7 +44,7 @@ struct DevicesView: View {
                             }
                         }
                     } header: {
-                        Text("Weitere Displays im WLAN")
+                        Text("Weitere Geräte im WLAN")
                     } footer: {
                         Text("Diese Displays gehören zu keinem Gerät deines Kontos.")
                     }
@@ -69,7 +69,7 @@ struct DevicesView: View {
                     }
                 }
             }
-            .navigationTitle("Displays")
+            .navigationTitle("Geräte")
             .navigationDestination(for: String.self) { id in
                 DeviceDetailView(deviceId: id)
             }
@@ -108,7 +108,7 @@ struct OfflineBanner: View {
     }
 
     private var detail: String {
-        var s = "Displays lassen sich trotzdem einrichten"
+        var s = "Geräte lassen sich trotzdem einrichten"
         if let d = model.lastSync {
             s += " – Stand: \(d.formatted(date: .abbreviated, time: .shortened))"
         }

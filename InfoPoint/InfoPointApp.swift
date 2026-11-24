@@ -53,7 +53,9 @@ struct MainTabs: View {
     var body: some View {
         TabView {
             DevicesView()
-                .tabItem { Label("Displays", systemImage: "display") }
+                .tabItem { Label("Geräte", systemImage: "display") }
+            TemplatesView()
+                .tabItem { Label("Vorlagen", systemImage: "square.grid.2x2") }
             FirmwaresView()
                 .tabItem { Label("Firmwares", systemImage: "cpu") }
             SettingsView()

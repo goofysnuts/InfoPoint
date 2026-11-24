@@ -44,7 +44,7 @@ final class TransferJob: Identifiable {
             guard let fw = model.cached[t.firmware] else {
                 throw AppError.message("Die Firmware „\(model.firmwareName(t.firmware))“ liegt noch nicht in der App. Einmal mit dem Server abgleichen.")
             }
-            guard case .object(var config)? = device.configs[t.id] else {
+            guard device.configs[t.id] != nil else {
                 throw AppError.message("Für dieses Gerät fehlt die Konfiguration. Ist ihm im Server ein WLAN zugeordnet? Danach einmal abgleichen.")
             }
 
@@ -69,12 +69,11 @@ final class TransferJob: Identifiable {
             }
 
             step = .config
-            let rev = max(device.rev, current.rev, device.lastSeen?.rev ?? 0) + 1
-            config["rev"] = .int(rev)
-            let body = try JSONEncoder().encode(config)
+            let rev = model.nextRev(device, displayRev: current.rev)
+            let body = try model.configBody(device: device, templateId: t.id, ui: device.ui, rev: rev)
             try await DisplayClient(base: base).sendConfig(body, token: device.token)
 
-            model.noteApplied(deviceId: device.id, template: t, rev: rev)
+            model.record(PendingApply(deviceId: device.id, templateId: t.id, ui: nil, rev: rev))
             step = .done
             finished = true
             Task { await model.syncNow() }   // dem Server melden, falls er erreichbar ist

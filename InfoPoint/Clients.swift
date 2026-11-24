@@ -59,7 +59,11 @@ final class ServerClient: NSObject, URLSessionDelegate {
         completionHandler(.performDefaultHandling, nil)
     }
 
-    private func url(_ path: String) -> URL { baseURL.appendingPathComponent(path) }
+    private func url(_ path: String) -> URL {
+        // Pfad mit Query ("api/geocode?q=…") nicht durch appendingPathComponent escapen lassen
+        let base = baseURL.absoluteString.hasSuffix("/") ? baseURL.absoluteString : baseURL.absoluteString + "/"
+        return URL(string: base + path) ?? baseURL.appendingPathComponent(path)
+    }
 
     private func send(_ path: String, method: String, json: [String: Any]?) async throws -> Data {
         var req = URLRequest(url: url(path))
@@ -93,9 +97,58 @@ final class ServerClient: NSObject, URLSessionDelegate {
         return try JSONDecoder().decode(SyncData.self, from: data)
     }
 
-    func reportApply(_ p: PendingApply) async throws {
-        _ = try await request("api/profiles/\(p.deviceId)/apply", method: "POST",
-                              json: ["templateId": p.templateId, "rev": p.rev])
+    func report(_ p: PendingApply) async throws {
+        var body: [String: Any] = [:]
+        if let t = p.templateId { body["templateId"] = t }
+        if let ui = p.ui { body["ui"] = ui.json.any }
+        if let rev = p.rev { body["rev"] = rev }
+        _ = try await request("api/app/devices/\(p.deviceId)/report", method: "POST", json: body)
+    }
+
+    // ── Vorlagen ────────────────────────────────────────────────────────────
+    func createTemplate(name: String, firmware: String, members: [String]) async throws -> String {
+        var body: [String: Any] = ["name": name, "firmware": firmware]
+        if !members.isEmpty { body["app"] = ["members": members] }
+        let data = try await request("api/templates", method: "POST", json: body)
+        let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        guard let id = obj?["id"] as? String else { throw AppError.message("Vorlage konnte nicht angelegt werden") }
+        return id
+    }
+
+    func updateTemplate(id: String, name: String, app: JSONValue) async throws {
+        _ = try await request("api/templates/\(id)", method: "PUT", json: ["name": name, "app": app.any])
+    }
+
+    func deleteTemplate(id: String) async throws {
+        _ = try await request("api/templates/\(id)", method: "DELETE")
+    }
+
+    // ── Suchen für den Vorlagen-Editor ──────────────────────────────────────
+    private func getJSON(_ path: String) async throws -> JSONValue {
+        try JSONDecoder().decode(JSONValue.self, from: try await request(path))
+    }
+
+    private static func q(_ s: String) -> String {
+        let safe = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~")
+        return s.addingPercentEncoding(withAllowedCharacters: safe) ?? ""
+    }
+
+    func geocode(_ text: String) async throws -> [JSONValue] {
+        try await getJSON("api/geocode?q=\(Self.q(text))").arrayValue ?? []
+    }
+
+    func stops(_ text: String) async throws -> [JSONValue] {
+        try await getJSON("api/stops?q=\(Self.q(text))").arrayValue ?? []
+    }
+
+    func teams(league: String) async throws -> [String] {
+        let v = try await getJSON("api/teams?league=\(Self.q(league))")
+        return (v["teams"]?.arrayValue ?? []).compactMap { $0["name"]?.stringValue }
+    }
+
+    func icloudCalendars() async throws -> [JSONValue] {
+        let data = try await request("api/calendar/icloud", method: "POST", json: ["account": true])
+        return try JSONDecoder().decode(JSONValue.self, from: data).arrayValue ?? []
     }
 
     // Firmware laden, Größe + MD5 prüfen, dann an ihren Platz legen
