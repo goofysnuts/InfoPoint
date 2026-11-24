@@ -26,7 +26,7 @@ struct DeviceDetailView: View {
     }
 
     private func content(_ d: DeviceInfo) -> some View {
-        Form {
+        IPForm {
             statusSection(d)
             appearanceSection(d)
             templateSection(d)
@@ -36,10 +36,9 @@ struct DeviceDetailView: View {
                     start(d, force: false)
                 } label: {
                     Label("Auf Display übertragen", systemImage: "square.and.arrow.down.on.square")
-                        .fontWeight(.semibold)
-                        .frame(maxWidth: .infinity, minHeight: 30)
                 }
                 .disabled(selected == nil || job?.running == true)
+                .primaryRow()
             }
 
             Section {
@@ -140,34 +139,56 @@ struct DeviceDetailView: View {
                     Image(systemName: "sun.max")
                 }
             }
+            Picker("Bei Inaktivität", selection: $ui.smode) {
+                Text("Bildschirmschoner").tag(0)
+                Text("Nur dimmen").tag(1)
+            }
+            .pickerStyle(.segmented)
+            .listRowSeparator(.hidden)
+            Picker("Nach", selection: $ui.saver) {
+                ForEach(SaverOptions.all, id: \.0) { opt in
+                    Text(opt.1).tag(opt.0)
+                }
+            }
             VStack(alignment: .leading, spacing: 6) {
-                LabeledContent("Im Bildschirmschoner") {
+                LabeledContent(ui.smode == 1 ? "Gedimmt auf" : "Helligkeit im Schoner") {
                     Text("\(ui.dim) %").monospacedDigit()
                 }
                 Slider(value: intSlider(\.dim), in: 0...100, step: 5) {
-                    Text("Helligkeit im Bildschirmschoner")
+                    Text("Helligkeit im Ruhezustand")
                 } minimumValueLabel: {
                     Image(systemName: "moon")
                 } maximumValueLabel: {
                     Image(systemName: "sun.max")
                 }
             }
-            Picker("Bildschirmschoner nach", selection: $ui.saver) {
-                ForEach(SaverOptions.all, id: \.0) { opt in
-                    Text(opt.1).tag(opt.0)
+            if ui.smode == 0 {
+                Picker("Schrift der Uhr", selection: $ui.sfont) {
+                    ForEach(ClockStyle.fonts, id: \.0) { f in
+                        Text(f.1).tag(f.0)
+                    }
                 }
+                Picker("Größe der Uhr", selection: $ui.ssize) {
+                    ForEach(ClockStyle.sizes, id: \.0) { s in
+                        Text(s.1).tag(s.0)
+                    }
+                }
+                .pickerStyle(.segmented)
+                SaverPreview(ui: ui)
+                    .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
             }
             if dirty || uiBusy {
                 Button {
                     applyUi(d)
                 } label: {
-                    HStack {
-                        Text("Darstellung übernehmen").fontWeight(.semibold)
-                        Spacer()
-                        if uiBusy { ProgressView() }
+                    HStack(spacing: 8) {
+                        if uiBusy { ProgressView().tint(Theme.onAccent) }
+                        Text("Darstellung übernehmen")
                     }
                 }
                 .disabled(uiBusy)
+                .buttonStyle(PrimaryButtonStyle())
+                .padding(.vertical, 4)
             }
             if let uiError {
                 Label(uiError, systemImage: "exclamationmark.triangle.fill")
@@ -309,7 +330,7 @@ struct TransferSheet: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            IPList {
                 Section {
                     ForEach(steps, id: \.self) { s in
                         StepRow(step: s, job: job)
@@ -476,7 +497,40 @@ struct PalettePicker: View {
             }
             .padding()
         }
+        .background(AppBackground())
         .navigationTitle("Design")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// Vorschau des Bildschirmschoners im gewählten Design (Display 480 × 320)
+struct SaverPreview: View {
+    let ui: UiSettings
+
+    var body: some View {
+        let p = Palettes.all[min(max(ui.palette, 0), Palettes.all.count - 1)]
+        GeometryReader { geo in
+            let scale = geo.size.width / 480
+            let px = ClockStyle.pixels[min(max(ui.ssize, 0), 2)] * scale
+            VStack(spacing: 6 * scale) {
+                Text(ui.sfont == 3 ? "12:34" : "12:34")
+                    .font(ClockStyle.font(ui.sfont, size: px))
+                    .foregroundStyle(p.light ? Color.black : Color.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                Text("Dienstag, 24. November")
+                    .font(.system(size: 17 * scale))
+                    .foregroundStyle(p.accent)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(p.bg)
+        }
+        .aspectRatio(3 / 2, contentMode: .fit)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Theme.border, lineWidth: 1)
+        }
+        .accessibilityLabel("Vorschau des Bildschirmschoners")
     }
 }

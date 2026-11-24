@@ -32,6 +32,9 @@ targets:
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
           NSAllowsLocalNetworking: true
+        UIAppFonts:
+          - PlusJakartaSans.ttf
+          - DSEG7Classic-Bold.ttf
         UIBackgroundModes:
           - fetch
         BGTaskSchedulerPermittedIdentifiers:

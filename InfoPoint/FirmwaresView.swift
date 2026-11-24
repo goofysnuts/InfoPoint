@@ -11,7 +11,7 @@ struct FirmwaresView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            IPList {
                 Section {
                     ForEach(ids, id: \.self) { id in
                         FirmwareRow(id: id)

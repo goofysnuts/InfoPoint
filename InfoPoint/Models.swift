@@ -147,9 +147,43 @@ struct UiSettings: Codable, Hashable {
     var bright: Int = 100
     var dim: Int = 15
     var saver: Int = 60
+    var smode: Int = 0      // 0 = Bildschirmschoner mit Uhr, 1 = nur dimmen
+    var sfont: Int = 0      // Uhr-Schrift: 0 schlank, 1 kräftig, 2 technisch, 3 Digitaluhr
+    var ssize: Int = 1      // 0 klein, 1 mittel, 2 groß
+
+    init() {}
+
+    // ältere Stände ohne die neuen Felder lesen können
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        palette = try c.decodeIfPresent(Int.self, forKey: .palette) ?? 0
+        bright = try c.decodeIfPresent(Int.self, forKey: .bright) ?? 100
+        dim = try c.decodeIfPresent(Int.self, forKey: .dim) ?? 15
+        saver = try c.decodeIfPresent(Int.self, forKey: .saver) ?? 60
+        smode = try c.decodeIfPresent(Int.self, forKey: .smode) ?? 0
+        sfont = try c.decodeIfPresent(Int.self, forKey: .sfont) ?? 0
+        ssize = try c.decodeIfPresent(Int.self, forKey: .ssize) ?? 1
+    }
 
     var json: JSONValue {
-        .object(["palette": .int(palette), "bright": .int(bright), "dim": .int(dim), "saver": .int(saver)])
+        .object(["palette": .int(palette), "bright": .int(bright), "dim": .int(dim), "saver": .int(saver),
+                 "smode": .int(smode), "sfont": .int(sfont), "ssize": .int(ssize)])
+    }
+}
+
+enum ClockStyle {
+    static let fonts: [(Int, String)] = [(0, "Schlank"), (1, "Kräftig"), (2, "Technisch"), (3, "Digitaluhr")]
+    static let sizes: [(Int, String)] = [(0, "Klein"), (1, "Mittel"), (2, "Groß")]
+    static let pixels: [CGFloat] = [64, 92, 128]
+
+    // Vorschau-Schrift, möglichst nah an der Display-Schrift
+    static func font(_ style: Int, size: CGFloat) -> Font {
+        switch style {
+        case 1: return .system(size: size, weight: .bold).monospacedDigit()
+        case 2: return .system(size: size, weight: .medium, design: .monospaced)
+        case 3: return .custom("DSEG7 Classic", fixedSize: size).weight(.bold)
+        default: return .system(size: size, weight: .light).monospacedDigit()
+        }
     }
 }
 

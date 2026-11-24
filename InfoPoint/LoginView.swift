@@ -18,7 +18,7 @@ struct LoginView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            IPForm {
                 Section {
                     VStack(spacing: 12) {
                         Image("Logo")
@@ -83,18 +83,14 @@ struct LoginView: View {
 
                 Section {
                     Button(action: submit) {
-                        HStack {
-                            Spacer()
-                            if busy {
-                                ProgressView()
-                            } else {
-                                Text("Anmelden").fontWeight(.semibold)
-                            }
-                            Spacer()
+                        if busy {
+                            ProgressView().tint(Theme.onAccent)
+                        } else {
+                            Text("Anmelden")
                         }
-                        .frame(minHeight: 28)
                     }
                     .disabled(!canSubmit)
+                    .primaryRow()
                 }
             }
             .navigationBarTitleDisplayMode(.inline)

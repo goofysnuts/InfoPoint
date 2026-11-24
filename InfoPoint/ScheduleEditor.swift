@@ -30,7 +30,7 @@ struct MultiEditor: View {
             ForEach(members, id: \.self) { id in
                 if let entry = model.catalogEntry(id) {
                     NavigationLink {
-                        Form {
+                        IPForm {
                             FieldsList(fields: entry.fields, value: $app.field("apps").field(id), editable: editable)
                         }
                         .navigationTitle(entry.name)
@@ -178,7 +178,7 @@ struct RuleEditor: View {
     var body: some View {
         let f = rule["f"]?.intValue ?? 0
         let t = rule["t"]?.intValue ?? 0
-        Form {
+        IPForm {
             Section {
                 Picker("Anzeige", selection: $rule.field("a").string) {
                     ForEach(members, id: \.self) { id in

@@ -5,10 +5,16 @@ import BackgroundTasks
 struct InfoPointApp: App {
     @State private var model = AppModel()
 
+    init() {
+        Theme.applyAppearance()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(model)
+                .font(.jakarta(.body, size: 17))
+                .tint(Theme.accent)
         }
         // regelmäßiger Abgleich im Hintergrund: neue Firmwares landen ohne Zutun in der App
         .backgroundTask(.appRefresh(refreshTaskId)) {

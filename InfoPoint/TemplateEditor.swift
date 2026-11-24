@@ -50,7 +50,7 @@ struct TemplateEditorView: View {
 
     var body: some View {
         if let t = template {
-            Form {
+            IPForm {
                 if !model.online {
                     Section {
                         Label("Bearbeiten geht nur mit Verbindung zum Server.", systemImage: "icloud.slash")
@@ -248,7 +248,7 @@ struct SearchList: View {
     @State private var error: String?
 
     var body: some View {
-        List {
+        IPList {
             if let extra {
                 Section {
                     Button(extra.0, action: extra.1)
@@ -312,7 +312,7 @@ struct LocationsEditor: View {
     @State private var adding = false
 
     var body: some View {
-        List {
+        IPList {
             Section {
                 ForEach(items.indices, id: \.self) { i in
                     VStack(alignment: .leading, spacing: 2) {
@@ -364,7 +364,7 @@ struct StopsEditor: View {
     @State private var adding = false
 
     var body: some View {
-        List {
+        IPList {
             Section {
                 ForEach(items.indices, id: \.self) { i in
                     VStack(alignment: .leading, spacing: 2) {
@@ -470,7 +470,7 @@ struct TeamPicker: View {
     }
 
     var body: some View {
-        List {
+        IPList {
             if let error {
                 Section {
                     Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red).font(.footnote)
@@ -565,7 +565,7 @@ struct CalendarsEditor: View {
     }
 
     var body: some View {
-        List {
+        IPList {
             Section {
                 Picker("Apple-Kalender", selection: modeBinding) {
                     Text("Mein Apple-Konto").tag(Mode.account)

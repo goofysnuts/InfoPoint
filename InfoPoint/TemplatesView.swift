@@ -56,7 +56,7 @@ struct TemplatesView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            List {
+            IPList {
                 if !model.online {
                     Section {
                         Label("Vorlagen anlegen und bearbeiten geht nur, wenn der Server erreichbar ist. Übertragen auf Geräte klappt auch offline.",
@@ -187,7 +187,7 @@ struct NewTemplateSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            IPForm {
                 Section("Name") {
                     TextField("z. B. Küche morgens", text: $name)
                 }

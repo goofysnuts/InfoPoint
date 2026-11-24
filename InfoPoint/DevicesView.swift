@@ -12,7 +12,7 @@ struct DevicesView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            IPList {
                 if model.serverReachable == false {
                     Section {
                         OfflineBanner()
@@ -152,18 +152,13 @@ struct StatusPill: View {
     var pending = false
 
     var body: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 6) {
             if pending {
                 Image(systemName: "clock.arrow.circlepath")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Theme.warn)
                     .accessibilityLabel("Wartet auf den Server")
             }
-            Circle()
-                .fill(visible ? Color.green : Color.secondary.opacity(0.5))
-                .frame(width: 7, height: 7)
-            Text(visible ? "Im WLAN" : "Nicht gefunden")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Badge(text: visible ? "Im WLAN" : "Nicht gefunden", color: visible ? Theme.accent : Theme.fg2)
         }
         .accessibilityElement(children: .combine)
     }
