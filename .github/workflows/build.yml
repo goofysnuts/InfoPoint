@@ -32,8 +32,10 @@ jobs:
             -destination 'generic/platform=iOS' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
-            build | tee xcodebuild.log | grep -E "error:|warning: .*Swift|BUILD" || true
-          test -d build/Build/Products/Release-iphoneos/InfoPoint.app
+            build 2>&1 | tee xcodebuild.log | grep -E "error:|BUILD" || true
+          # nur ein vollständig gebautes App-Bundle (mit Programmdatei) gilt als Erfolg
+          grep -q "BUILD SUCCEEDED" xcodebuild.log
+          test -f build/Build/Products/Release-iphoneos/InfoPoint.app/InfoPoint
 
       - name: IPA packen
         run: |

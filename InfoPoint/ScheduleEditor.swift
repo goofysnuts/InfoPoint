@@ -92,7 +92,11 @@ struct MultiEditor: View {
 
     private var rotBinding: Binding<Int> {
         Binding(get: { sched.wrappedValue["rot"]?.intValue ?? 120 },
-                set: { sched.wrappedValue = { var s = sched.wrappedValue; s["rot"] = .int($0); return s }() })
+                set: { newValue in
+                    var s = sched.wrappedValue
+                    s["rot"] = .int(newValue)
+                    sched.wrappedValue = s
+                })
     }
 
     private func ruleBinding(_ i: Int) -> Binding<JSONValue> {
