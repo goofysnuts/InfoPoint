@@ -16,6 +16,7 @@ struct DeviceDetailView: View {
     @State private var uiBusy = false
     @State private var uiMessage: String?
     @State private var uiError: String?
+    @State private var loadedFor: String?   // Zustand nur beim ersten Öffnen laden – nicht nach Rückkehr aus der Design-Auswahl
 
     var body: some View {
         if let d = model.device(deviceId) {
@@ -69,9 +70,12 @@ struct DeviceDetailView: View {
         .navigationTitle(d.name)
         .navigationBarTitleDisplayMode(.inline)
         .task(id: deviceId) {
-            if selected == nil { selected = d.templateId }
-            ui = d.ui ?? UiSettings()
-            ipText = model.manualIPs[d.id] ?? ""
+            if loadedFor != deviceId {
+                loadedFor = deviceId
+                selected = d.templateId
+                ui = d.ui ?? UiSettings()
+                ipText = model.manualIPs[d.id] ?? ""
+            }
             await check(d)
         }
         .refreshable { await check(d) }
@@ -170,6 +174,18 @@ struct DeviceDetailView: View {
                 }
                 Picker("Größe der Uhr", selection: $ui.ssize) {
                     ForEach(ClockStyle.sizes, id: \.0) { s in
+                        Text(s.1).tag(s.0)
+                    }
+                }
+                .pickerStyle(.segmented)
+                Picker("Schrift des Datums", selection: $ui.dfont) {
+                    ForEach(ClockStyle.dateFonts, id: \.0) { f in
+                        Text(f.1).tag(f.0)
+                    }
+                }
+                .disabled(ui.dsize == 3)
+                Picker("Größe des Datums", selection: $ui.dsize) {
+                    ForEach(ClockStyle.dateSizes, id: \.0) { s in
                         Text(s.1).tag(s.0)
                     }
                 }
@@ -513,14 +529,17 @@ struct SaverPreview: View {
             let scale = geo.size.width / 480
             let px = ClockStyle.pixels[min(max(ui.ssize, 0), 2)] * scale
             VStack(spacing: 6 * scale) {
-                Text(ui.sfont == 3 ? "12:34" : "12:34")
+                Text("12:34")
                     .font(ClockStyle.font(ui.sfont, size: px))
                     .foregroundStyle(p.light ? Color.black : Color.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
-                Text("Dienstag, 24. November")
-                    .font(.system(size: 17 * scale))
-                    .foregroundStyle(p.accent)
+                if ui.dsize != 3 {
+                    Text("Dienstag, 24. November")
+                        .font(.system(size: ClockStyle.datePixels[min(max(ui.dsize, 0), 2)] * scale,
+                                      weight: ui.dfont == 1 ? .semibold : .regular))
+                        .foregroundStyle(p.accent)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(p.bg)

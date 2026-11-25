@@ -150,6 +150,8 @@ struct UiSettings: Codable, Hashable {
     var smode: Int = 0      // 0 = Bildschirmschoner mit Uhr, 1 = nur dimmen
     var sfont: Int = 0      // Uhr-Schrift: 0 schlank, 1 kräftig, 2 technisch, 3 Digitaluhr
     var ssize: Int = 1      // 0 klein, 1 mittel, 2 groß
+    var dfont: Int = 0      // Datum: 0 normal, 1 kräftig
+    var dsize: Int = 0      // Datum: 0 klein, 1 mittel, 2 groß, 3 aus
 
     init() {}
 
@@ -163,11 +165,14 @@ struct UiSettings: Codable, Hashable {
         smode = try c.decodeIfPresent(Int.self, forKey: .smode) ?? 0
         sfont = try c.decodeIfPresent(Int.self, forKey: .sfont) ?? 0
         ssize = try c.decodeIfPresent(Int.self, forKey: .ssize) ?? 1
+        dfont = try c.decodeIfPresent(Int.self, forKey: .dfont) ?? 0
+        dsize = try c.decodeIfPresent(Int.self, forKey: .dsize) ?? 0
     }
 
     var json: JSONValue {
         .object(["palette": .int(palette), "bright": .int(bright), "dim": .int(dim), "saver": .int(saver),
-                 "smode": .int(smode), "sfont": .int(sfont), "ssize": .int(ssize)])
+                 "smode": .int(smode), "sfont": .int(sfont), "ssize": .int(ssize),
+                 "dfont": .int(dfont), "dsize": .int(dsize)])
     }
 }
 
@@ -175,6 +180,9 @@ enum ClockStyle {
     static let fonts: [(Int, String)] = [(0, "Schlank"), (1, "Kräftig"), (2, "Technisch"), (3, "Digitaluhr")]
     static let sizes: [(Int, String)] = [(0, "Klein"), (1, "Mittel"), (2, "Groß")]
     static let pixels: [CGFloat] = [64, 92, 128]
+    static let dateFonts: [(Int, String)] = [(0, "Normal"), (1, "Kräftig")]
+    static let dateSizes: [(Int, String)] = [(0, "Klein"), (1, "Mittel"), (2, "Groß"), (3, "Aus")]
+    static let datePixels: [CGFloat] = [17, 22, 28]
 
     // Vorschau-Schrift, möglichst nah an der Display-Schrift
     static func font(_ style: Int, size: CGFloat) -> Font {
