@@ -13,7 +13,7 @@ struct InfoPointApp: App {
         WindowGroup {
             RootView()
                 .environment(model)
-                .font(.jakarta(.body, size: 17))
+                .font(.dm(.body, 16, .medium))
                 .tint(Theme.accent)
         }
         // regelmäßiger Abgleich im Hintergrund: neue Firmwares landen ohne Zutun in der App
@@ -56,16 +56,21 @@ struct RootView: View {
 }
 
 struct MainTabs: View {
+    @Environment(AppModel.self) private var model
+    private var isAdmin: Bool { model.data?.user.role == "admin" }
+
     var body: some View {
         TabView {
+            HomeView()
+                .tabItem { Label("Übersicht", systemImage: "house") }
             DevicesView()
                 .tabItem { Label("Geräte", systemImage: "display") }
             TemplatesView()
-                .tabItem { Label("Vorlagen", systemImage: "square.grid.2x2") }
-            FirmwaresView()
-                .tabItem { Label("Firmwares", systemImage: "cpu") }
+                .tabItem { Label("Vorlagen", systemImage: "square.3.layers.3d") }
+            WifiView()
+                .tabItem { Label("WLAN", systemImage: "wifi") }
             SettingsView()
-                .tabItem { Label("Einstellungen", systemImage: "gearshape") }
+                .tabItem { Label(isAdmin ? "Einstellungen" : "Konto", systemImage: isAdmin ? "slider.horizontal.3" : "person.crop.circle") }
         }
     }
 }

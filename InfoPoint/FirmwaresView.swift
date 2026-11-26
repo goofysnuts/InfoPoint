@@ -9,8 +9,8 @@ struct FirmwaresView: View {
         return list
     }
 
+    // wird aus den Einstellungen geöffnet (dort liegt der NavigationStack)
     var body: some View {
-        NavigationStack {
             IPList {
                 Section {
                     ForEach(ids, id: \.self) { id in
@@ -29,7 +29,6 @@ struct FirmwaresView: View {
             }
             .navigationTitle("Firmwares")
             .refreshable { await model.syncNow() }
-        }
     }
 }
 
@@ -54,17 +53,17 @@ private struct FirmwareRow: View {
         HStack(spacing: 12) {
             Image(systemName: (f?.multi ?? false) ? "square.stack.3d.up" : "cpu")
                 .font(.title3)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Theme.accent)
                 .frame(width: 38, height: 38)
-                .background(Color.accentColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .background(Theme.accent.opacity(0.14), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(f?.name ?? id)
-                    .font(.body.weight(.semibold))
+                    .font(.dm(.body, 16, .bold))
                 if let f {
                     Text("Version \(f.version) · \(ByteCountFormatter.string(fromByteCount: Int64(f.size), countStyle: .file))")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(.dm(.subheadline, 14))
+                        .foregroundStyle(Theme.fg2)
                         .monospacedDigit()
                 }
             }
@@ -80,19 +79,19 @@ private struct FirmwareRow: View {
         case .ok:
             Label("Offline verfügbar", systemImage: "checkmark.circle.fill")
                 .labelStyle(.iconOnly)
-                .foregroundStyle(.green)
+                .foregroundStyle(Theme.ok)
                 .font(.title3)
         case .loading:
             ProgressView()
                 .accessibilityLabel("Wird geladen")
         case .outdated:
             Label("Update ausstehend", systemImage: "arrow.down.circle")
-                .font(.caption)
-                .foregroundStyle(.orange)
+                .font(.dm(.caption, 12))
+                .foregroundStyle(Theme.warn)
         case .missing:
             Label("Fehlt", systemImage: "exclamationmark.circle")
-                .font(.caption)
-                .foregroundStyle(.red)
+                .font(.dm(.caption, 12))
+                .foregroundStyle(Theme.danger)
         }
     }
 }

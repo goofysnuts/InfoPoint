@@ -146,8 +146,8 @@ private struct RuleRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(model.firmwareName(a))
                 Text("\(Schedule.daysText(rule["d"]?.intValue ?? 127)) · \(f == t ? "ganzer Tag" : "\(Schedule.hm(f))–\(Schedule.hm(t))")")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.dm(.caption, 12))
+                    .foregroundStyle(Theme.fg2)
                     .monospacedDigit()
             }
         }
@@ -202,10 +202,10 @@ struct RuleEditor: View {
                             setDays(days ^ (1 << b))
                         } label: {
                             Text(Schedule.days[b])
-                                .font(.subheadline.weight(.semibold))
+                                .font(.dm(.subheadline, 14, .bold))
                                 .frame(maxWidth: .infinity, minHeight: 38)
                                 .foregroundStyle(on ? Color.white : Color.primary)
-                                .background(on ? Color.accentColor : Color(.tertiarySystemFill),
+                                .background(on ? Theme.accent : Color(.tertiarySystemFill),
                                             in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                         }
                         .buttonStyle(.plain)
@@ -222,7 +222,7 @@ struct RuleEditor: View {
                     Button("Täglich") { setDays(127) }
                 }
                 .buttonStyle(.borderless)
-                .font(.subheadline)
+                .font(.dm(.subheadline, 14))
             }
         }
         .disabled(!editable)
@@ -243,8 +243,8 @@ struct WeekPreview: View {
             ForEach(0..<7, id: \.self) { wd in
                 HStack(spacing: 8) {
                     Text(Schedule.days[wd])
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .font(.dm(.caption2, 11, .bold))
+                        .foregroundStyle(Theme.fg2)
                         .frame(width: 22, alignment: .leading)
                     Canvas { ctx, size in
                         let step = 15
@@ -277,7 +277,7 @@ struct WeekPreview: View {
                         if h != 24 { Spacer() }
                     }
                 }
-                .font(.caption2)
+                .font(.dm(.caption2, 11))
                 .foregroundStyle(.tertiary)
                 .monospacedDigit()
             }
@@ -289,8 +289,8 @@ struct WeekPreview: View {
                     }
                 }
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            .font(.dm(.caption, 12))
+            .foregroundStyle(Theme.fg2)
             .padding(.top, 2)
         }
         .accessibilityElement(children: .ignore)

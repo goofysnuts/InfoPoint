@@ -96,9 +96,9 @@ struct DeviceDetailView: View {
                 } else if let u = reachedURL {
                     Label(u.host ?? "", systemImage: "wifi")
                         .monospacedDigit()
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Theme.ok)
                 } else {
-                    Text("Nicht gefunden").foregroundStyle(.secondary)
+                    Text("Nicht gefunden").foregroundStyle(Theme.fg2)
                 }
             }
             LabeledContent("Firmware") {
@@ -111,8 +111,8 @@ struct DeviceDetailView: View {
             LabeledContent("Vorlage", value: d.templateName ?? "–")
             if model.pendingCount(for: d.id) > 0 {
                 Label("Änderung wird dem Server gemeldet, sobald er erreichbar ist", systemImage: "clock.arrow.circlepath")
-                    .font(.footnote)
-                    .foregroundStyle(.orange)
+                    .font(.dm(.footnote, 13))
+                    .foregroundStyle(Theme.warn)
             }
         }
     }
@@ -208,12 +208,12 @@ struct DeviceDetailView: View {
             }
             if let uiError {
                 Label(uiError, systemImage: "exclamationmark.triangle.fill")
-                    .font(.footnote)
-                    .foregroundStyle(.red)
+                    .font(.dm(.footnote, 13))
+                    .foregroundStyle(Theme.danger)
             } else if let uiMessage {
                 Label(uiMessage, systemImage: "checkmark.circle.fill")
-                    .font(.footnote)
-                    .foregroundStyle(.green)
+                    .font(.dm(.footnote, 13))
+                    .foregroundStyle(Theme.ok)
             }
         } header: {
             Text("Darstellung")
@@ -253,8 +253,8 @@ struct DeviceDetailView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(t.name)
                         Text(subtitle(t))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.dm(.caption, 12))
+                            .foregroundStyle(Theme.fg2)
                     }
                     .tag(Optional(t.id))
                 }
@@ -264,8 +264,8 @@ struct DeviceDetailView: View {
             if let t = model.template(selected) {
                 ForEach(notes(d, t), id: \.text) { n in
                     Label(n.text, systemImage: n.icon)
-                        .font(.footnote)
-                        .foregroundStyle(n.warn ? Color.orange : Color.secondary)
+                        .font(.dm(.footnote, 13))
+                        .foregroundStyle(n.warn ? Theme.warn : Theme.fg2)
                 }
             }
         } header: {
@@ -358,14 +358,14 @@ struct TransferSheet: View {
                 if let e = job.error {
                     Section {
                         Label(e, systemImage: "xmark.octagon.fill")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Theme.danger)
                     }
                 }
 
                 if job.finished {
                     Section {
                         Label("Das Display startet mit der neuen Vorlage neu.", systemImage: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Theme.ok)
                     } footer: {
                         if model.serverReachable != true {
                             Text("Der Server erfährt davon, sobald er wieder erreichbar ist.")
@@ -410,8 +410,8 @@ private struct StepRow: View {
                 Spacer()
                 if step == .firmware && state == .active {
                     Text(job.uploadProgress, format: .percent.precision(.fractionLength(0)))
-                        .font(.subheadline.monospacedDigit())
-                        .foregroundStyle(.secondary)
+                        .font(.dm(.subheadline, 14).monospacedDigit())
+                        .foregroundStyle(Theme.fg2)
                 }
             }
             if step == .firmware && state == .active {
@@ -429,9 +429,9 @@ private struct StepRow: View {
         case .active:
             ProgressView()
         case .done:
-            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.ok)
         case .failed:
-            Image(systemName: "xmark.circle.fill").foregroundStyle(.red)
+            Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.danger)
         }
     }
 }
@@ -476,7 +476,7 @@ struct PalettePicker: View {
                 ForEach(Palettes.groups, id: \.0) { group in
                     VStack(alignment: .leading, spacing: 10) {
                         Text(group.0)
-                            .font(.headline)
+                            .font(.nunito(.headline, 17))
                         LazyVGrid(columns: columns, spacing: 12) {
                             ForEach(group.1, id: \.self) { i in
                                 let p = Palettes.all[i]
@@ -490,13 +490,13 @@ struct PalettePicker: View {
                                                 if selection == i {
                                                     Image(systemName: "checkmark.circle.fill")
                                                         .symbolRenderingMode(.palette)
-                                                        .foregroundStyle(.white, Color.accentColor)
+                                                        .foregroundStyle(.white, Theme.accent)
                                                         .font(.title3)
                                                         .offset(x: 6, y: -6)
                                                 }
                                             }
                                         Text(p.shortName)
-                                            .font(.caption)
+                                            .font(.dm(.caption, 12))
                                             .foregroundStyle(.primary)
                                             .lineLimit(1)
                                     }

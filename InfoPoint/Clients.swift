@@ -123,6 +123,41 @@ final class ServerClient: NSObject, URLSessionDelegate {
         _ = try await request("api/templates/\(id)", method: "DELETE")
     }
 
+    // ── WLAN ────────────────────────────────────────────────────────────────
+    func wifiSuggest() async throws -> JSONValue {
+        try JSONDecoder().decode(JSONValue.self, from: try await request("api/wifi/suggest"))
+    }
+
+    func saveWifi(id: String?, name: String, ssid: String, password: String, clearPassword: Bool) async throws {
+        var body: [String: Any] = ["name": name, "ssid": ssid]
+        if !password.isEmpty { body["password"] = password }
+        if clearPassword { body["clearPassword"] = true }
+        if let id {
+            _ = try await request("api/wifi/\(id)", method: "PUT", json: body)
+        } else {
+            _ = try await request("api/wifi", method: "POST", json: body)
+        }
+    }
+
+    func deleteWifi(id: String) async throws {
+        _ = try await request("api/wifi/\(id)", method: "DELETE")
+    }
+
+    // Netze über die eigenen Displays suchen lassen (Antwort kommt beim nächsten Abruf, ≤ 20 s)
+    func startWifiScan() async throws -> [String] {
+        let v = try JSONDecoder().decode(JSONValue.self, from: try await request("api/wifi/scan", method: "POST", json: [:]))
+        return (v["devices"]?.arrayValue ?? []).compactMap(\.stringValue)
+    }
+
+    func wifiScanResults(since: Int) async throws -> JSONValue {
+        try JSONDecoder().decode(JSONValue.self, from: try await request("api/wifi/scan?since=\(since)"))
+    }
+
+    // Vorschaubild eines Displays (public/previews)
+    func preview(_ name: String) async throws -> Data {
+        try await request("previews/\(name).png")
+    }
+
     // ── Suchen für den Vorlagen-Editor ──────────────────────────────────────
     private func getJSON(_ path: String) async throws -> JSONValue {
         try JSONDecoder().decode(JSONValue.self, from: try await request(path))

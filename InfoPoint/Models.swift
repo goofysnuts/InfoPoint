@@ -131,6 +131,14 @@ struct TemplateInfo: Codable, Identifiable, Hashable {
     var members: [String]
     var app: JSONValue?
     var updatedAt: String?
+    var deviceCount: Int?
+}
+
+struct WifiInfo: Codable, Identifiable, Hashable {
+    var id: String
+    var name: String
+    var ssid: String
+    var hasPassword: Bool
 }
 
 struct LastSeen: Codable, Hashable {
@@ -139,6 +147,8 @@ struct LastSeen: Codable, Hashable {
     var ip: String?
     var fw: String?
     var rev: Int?
+    var rssi: Int?
+    var ssid: String?
 }
 
 // Darstellung am Display
@@ -208,6 +218,7 @@ struct DeviceInfo: Codable, Identifiable {
     var ownerName: String?
     var online: Bool
     var ui: UiSettings?
+    var portrait: Bool?
     var lastSeen: LastSeen?
     var configs: [String: JSONValue]
 }
@@ -219,6 +230,8 @@ struct SyncData: Codable {
     var templates: [TemplateInfo]
     var catalog: [CatalogEntry]?
     var icloudAccount: String?
+    var wifi: [WifiInfo]?
+    var previewsVersion: Double?
     var devices: [DeviceInfo]
 }
 

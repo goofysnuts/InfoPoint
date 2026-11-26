@@ -25,18 +25,18 @@ struct SettingsView: View {
                     LabeledContent("Status") {
                         switch model.serverReachable {
                         case .some(true):
-                            Label("Verbunden", systemImage: "checkmark.icloud").foregroundStyle(.green)
+                            Label("Verbunden", systemImage: "checkmark.icloud").foregroundStyle(Theme.ok)
                         case .some(false):
-                            Label("Offline", systemImage: "icloud.slash").foregroundStyle(.orange)
+                            Label("Offline", systemImage: "icloud.slash").foregroundStyle(Theme.warn)
                         case .none:
-                            Text("–").foregroundStyle(.secondary)
+                            Text("–").foregroundStyle(Theme.fg2)
                         }
                     }
                     LabeledContent("Letzter Abgleich") {
                         if let d = model.lastSync {
                             Text(d.formatted(.relative(presentation: .named)))
                         } else {
-                            Text("noch nie").foregroundStyle(.secondary)
+                            Text("noch nie").foregroundStyle(Theme.fg2)
                         }
                     }
                     Button {
@@ -54,8 +54,8 @@ struct SettingsView: View {
                 if let e = model.syncError {
                     Section {
                         Label(e, systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.red)
-                            .font(.footnote)
+                            .foregroundStyle(Theme.danger)
+                            .font(.dm(.footnote, 13))
                     }
                 }
 
@@ -80,7 +80,11 @@ struct SettingsView: View {
                 }
 
                 Section("Offline gespeichert") {
-                    LabeledContent("Firmwares", value: "\(model.cached.count)")
+                    NavigationLink {
+                        FirmwaresView()
+                    } label: {
+                        LabeledContent("Firmwares", value: "\(model.cached.count)")
+                    }
                     LabeledContent("Geräte", value: "\(model.data?.devices.count ?? 0)")
                     LabeledContent("Vorlagen", value: "\(model.data?.templates.count ?? 0)")
                 }

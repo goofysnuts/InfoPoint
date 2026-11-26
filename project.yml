@@ -33,7 +33,11 @@ targets:
           NSAllowsArbitraryLoads: true
           NSAllowsLocalNetworking: true
         UIAppFonts:
-          - PlusJakartaSans.ttf
+          - Nunito-ExtraBold.ttf
+          - Nunito-Black.ttf
+          - DMSans-Regular.ttf
+          - DMSans-Medium.ttf
+          - DMSans-Bold.ttf
           - DSEG7Classic-Bold.ttf
         UIBackgroundModes:
           - fetch

@@ -61,8 +61,8 @@ struct TemplatesView: View {
                     Section {
                         Label("Vorlagen anlegen und bearbeiten geht nur, wenn der Server erreichbar ist. Übertragen auf Geräte klappt auch offline.",
                               systemImage: "icloud.slash")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                            .font(.dm(.footnote, 13))
+                            .foregroundStyle(Theme.fg2)
                     }
                 }
                 ForEach(groups) { g in
@@ -146,11 +146,11 @@ private struct TemplateRow: View {
             FirmwareIcon(id: template.firmware)
             VStack(alignment: .leading, spacing: 2) {
                 Text(template.name)
-                    .font(.body.weight(.semibold))
+                    .font(.dm(.body, 16, .bold))
                 if !subtitle.isEmpty {
                     Text(subtitle)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(.dm(.subheadline, 14))
+                        .foregroundStyle(Theme.fg2)
                         .lineLimit(1)
                 }
             }
@@ -220,7 +220,7 @@ struct NewTemplateSheet: View {
                 }
                 if let error {
                     Section {
-                        Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red)
+                        Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Theme.danger)
                     }
                 }
             }

@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import BackgroundTasks
+import UIKit
 
 let refreshTaskId = "de.infopoint.app.sync"
 
@@ -28,6 +29,7 @@ final class AppModel {
     let discovery = Discovery()
 
     @ObservationIgnored private var client: ServerClient?
+    @ObservationIgnored private var previewCache: [String: UIImage] = [:]
 
     init() {
         let d = UserDefaults.standard
@@ -117,6 +119,13 @@ final class AppModel {
         do {
             await replayPending(c)
             var s = try await c.sync()
+            // neue Vorschaubilder auf dem Server → zwischengespeicherte verwerfen
+            let pv = s.previewsVersion ?? 0
+            if pv != UserDefaults.standard.double(forKey: "previewsVersion") {
+                Store.clearPreviews()
+                previewCache = [:]
+                UserDefaults.standard.set(pv, forKey: "previewsVersion")
+            }
             // noch nicht gemeldete Änderungen bleiben in der Anzeige sichtbar
             for p in pending { Self.overlay(p, on: &s) }
             data = s
@@ -271,6 +280,41 @@ final class AppModel {
         Store.save(pending, "pending.json")
         await syncNow()
         return .server
+    }
+
+    // ── Übersicht ───────────────────────────────────────────────────────────
+    // online: im WLAN gefunden oder (bei erreichbarem Server) laut Server
+    func isOnline(_ d: DeviceInfo) -> Bool {
+        discovery.isVisible(tid: d.tokenId) || (online && d.online)
+    }
+
+    var wifi: [WifiInfo] { (data?.wifi ?? []).sorted { $0.name.localizedCompare($1.name) == .orderedAscending } }
+
+    // Vorschaubild: Speicher → Datei → Server (nur die vier Einzel-Firmwares haben Bilder)
+    static let previewFirmwares: Set<String> = ["bundesliga", "wetter", "kalender", "abfahrten"]
+
+    func previewImage(_ name: String) async -> UIImage? {
+        if let img = previewCache[name] { return img }
+        let file = Store.previewDir.appendingPathComponent(name + ".png")
+        if let data = try? Data(contentsOf: file), let img = UIImage(data: data) {
+            previewCache[name] = img
+            return img
+        }
+        guard let c = api(), let data = try? await c.preview(name), let img = UIImage(data: data) else { return nil }
+        try? data.write(to: file, options: .atomic)
+        previewCache[name] = img
+        return img
+    }
+
+    // ── WLAN (braucht den Server) ───────────────────────────────────────────
+    func saveWifi(id: String?, name: String, ssid: String, password: String, clearPassword: Bool) async throws {
+        try await withServer { try await $0.saveWifi(id: id, name: name, ssid: ssid, password: password, clearPassword: clearPassword) }
+        await syncNow()
+    }
+
+    func deleteWifi(id: String) async throws {
+        try await withServer { try await $0.deleteWifi(id: id) }
+        await syncNow()
     }
 
     // ── Vorlagen (brauchen den Server) ──────────────────────────────────────

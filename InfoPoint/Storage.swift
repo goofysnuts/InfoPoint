@@ -16,6 +16,17 @@ enum Store {
         return url
     }()
 
+    static let previewDir: URL = {
+        let url = base.appendingPathComponent("previews", isDirectory: true)
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }()
+
+    static func clearPreviews() {
+        try? FileManager.default.removeItem(at: previewDir)
+        try? FileManager.default.createDirectory(at: previewDir, withIntermediateDirectories: true)
+    }
+
     static func load<T: Decodable>(_ type: T.Type, _ name: String) -> T? {
         guard let data = try? Data(contentsOf: base.appendingPathComponent(name)) else { return nil }
         return try? JSONDecoder().decode(T.self, from: data)
@@ -52,6 +63,7 @@ enum Store {
     static func wipe() {
         try? FileManager.default.removeItem(at: base)
         try? FileManager.default.createDirectory(at: firmwareDir, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(at: previewDir, withIntermediateDirectories: true)
     }
 }
 

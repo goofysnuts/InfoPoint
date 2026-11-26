@@ -27,10 +27,10 @@ struct LoginView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                             .accessibilityHidden(true)
                         Text("InfoPoint")
-                            .font(.largeTitle.bold())
+                            .font(.nunito(.largeTitle, 34, black: true))
                         Text("Einmal mit deinem InfoPoint-Konto anmelden. Danach richtest du Displays auch dann ein, wenn der Server offline ist.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(.dm(.subheadline, 14))
+                            .foregroundStyle(Theme.fg2)
                             .multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity)
@@ -77,7 +77,7 @@ struct LoginView: View {
                 if let error {
                     Section {
                         Label(error, systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Theme.danger)
                     }
                 }
 

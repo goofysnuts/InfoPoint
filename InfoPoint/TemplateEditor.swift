@@ -54,14 +54,14 @@ struct TemplateEditorView: View {
                 if !model.online {
                     Section {
                         Label("Bearbeiten geht nur mit Verbindung zum Server.", systemImage: "icloud.slash")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                            .font(.dm(.footnote, 13))
+                            .foregroundStyle(Theme.fg2)
                     }
                 } else if t.canEdit != true {
                     Section {
                         Label("Vorlage des Admins – nur ansehen.", systemImage: "lock")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                            .font(.dm(.footnote, 13))
+                            .foregroundStyle(Theme.fg2)
                     }
                 }
 
@@ -82,7 +82,7 @@ struct TemplateEditorView: View {
 
                 if let error {
                     Section {
-                        Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red)
+                        Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Theme.danger)
                     }
                 }
             }
@@ -147,8 +147,8 @@ private struct FieldRow: View {
             control
             if let help = field.help, !help.isEmpty, field.type != "locations", field.type != "stops" {
                 Text(help)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.dm(.caption, 12))
+                    .foregroundStyle(Theme.fg2)
             }
         }
     }
@@ -176,8 +176,8 @@ private struct FieldRow: View {
                     Text(field.label)
                     if let lo = field.min, let hi = field.max {
                         Text("\(Int(lo))–\(Int(hi))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.dm(.caption, 12))
+                            .foregroundStyle(Theme.fg2)
                     }
                 }
             }
@@ -257,8 +257,8 @@ struct SearchList: View {
             if let error {
                 Section {
                     Label(error, systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.red)
-                        .font(.footnote)
+                        .foregroundStyle(Theme.danger)
+                        .font(.dm(.footnote, 13))
                 }
             }
             Section {
@@ -269,7 +269,7 @@ struct SearchList: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(titleOf(results[i])).foregroundStyle(.primary)
                             if let sub = subtitleOf(results[i]), !sub.isEmpty {
-                                Text(sub).font(.caption).foregroundStyle(.secondary)
+                                Text(sub).font(.dm(.caption, 12)).foregroundStyle(Theme.fg2)
                             }
                         }
                     }
@@ -318,7 +318,7 @@ struct LocationsEditor: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(items[i]["n"]?.stringValue ?? "Ort")
                         if let l = items[i]["label"]?.stringValue, !l.isEmpty {
-                            Text(l).font(.caption).foregroundStyle(.secondary)
+                            Text(l).font(.dm(.caption, 12)).foregroundStyle(Theme.fg2)
                         }
                     }
                 }
@@ -371,10 +371,10 @@ struct StopsEditor: View {
                         Text(items[i]["name"]?.stringValue ?? "Haltestelle")
                         if let to = items[i]["to"]?["name"]?.stringValue {
                             Label(to, systemImage: "arrow.right")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .font(.dm(.caption, 12))
+                                .foregroundStyle(Theme.fg2)
                         } else {
-                            Text("alle Abfahrten").font(.caption).foregroundStyle(.secondary)
+                            Text("alle Abfahrten").font(.dm(.caption, 12)).foregroundStyle(Theme.fg2)
                         }
                     }
                 }
@@ -473,7 +473,7 @@ struct TeamPicker: View {
         IPList {
             if let error {
                 Section {
-                    Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red).font(.footnote)
+                    Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Theme.danger).font(.dm(.footnote, 13))
                 }
             }
             Section {
@@ -486,7 +486,7 @@ struct TeamPicker: View {
                             Text(name).foregroundStyle(.primary)
                             Spacer()
                             if name == selection {
-                                Image(systemName: "checkmark").foregroundStyle(Color.accentColor)
+                                Image(systemName: "checkmark").foregroundStyle(Theme.accent)
                             }
                         }
                     }
@@ -591,16 +591,16 @@ struct CalendarsEditor: View {
                     } else {
                         Label("Noch kein Apple-Konto hinterlegt – in der WebApp unter Einstellungen → Apple-Konto eintragen.",
                               systemImage: "exclamationmark.triangle")
-                            .font(.footnote)
-                            .foregroundStyle(.orange)
+                            .font(.dm(.footnote, 13))
+                            .foregroundStyle(Theme.warn)
                     }
                 } else if mode == .custom {
                     Text("Diese Vorlage nutzt eine eigene Apple-ID. Ändern geht in der WebApp.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .font(.dm(.footnote, 13))
+                        .foregroundStyle(Theme.fg2)
                 }
                 if let error {
-                    Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red).font(.footnote)
+                    Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(Theme.danger).font(.dm(.footnote, 13))
                 }
             } header: {
                 Text("iCloud")
@@ -611,7 +611,7 @@ struct CalendarsEditor: View {
                     let list = available.isEmpty ? selected : available
                     if list.isEmpty {
                         Text(mode == .account ? "„Kalender laden“ tippen" : "keine")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.fg2)
                     }
                     ForEach(list.indices, id: \.self) { i in
                         let cal = list[i]
@@ -623,7 +623,7 @@ struct CalendarsEditor: View {
                                 Text(cal["name"]?.stringValue ?? "Kalender").foregroundStyle(.primary)
                                 Spacer()
                                 if isSelected(cal["url"]?.stringValue ?? "") {
-                                    Image(systemName: "checkmark").foregroundStyle(Color.accentColor)
+                                    Image(systemName: "checkmark").foregroundStyle(Theme.accent)
                                 }
                             }
                         }
@@ -638,8 +638,8 @@ struct CalendarsEditor: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(ics[i]["name"]?.stringValue ?? "Kalender")
                         Text(ics[i]["url"]?.stringValue ?? "")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.dm(.caption, 12))
+                            .foregroundStyle(Theme.fg2)
                             .lineLimit(1)
                             .truncationMode(.middle)
                     }

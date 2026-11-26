@@ -95,14 +95,14 @@ struct OfflineBanner: View {
         Label {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Server offline")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.dm(.subheadline, 14, .bold))
                 Text(detail)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .font(.dm(.footnote, 13))
+                    .foregroundStyle(Theme.fg2)
             }
         } icon: {
             Image(systemName: "icloud.slash")
-                .foregroundStyle(.orange)
+                .foregroundStyle(Theme.warn)
         }
         .accessibilityElement(children: .combine)
     }
@@ -125,18 +125,13 @@ struct DeviceRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "display")
-                .font(.title3)
-                .foregroundStyle(Color.accentColor)
-                .frame(width: 38, height: 38)
-                .background(Color.accentColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                .accessibilityHidden(true)
+            Tile(systemImage: "display", size: 42)
             VStack(alignment: .leading, spacing: 2) {
                 Text(device.name)
-                    .font(.body.weight(.semibold))
+                    .font(.dm(.body, 16, .bold))
                 Text(device.templateName ?? model.firmwareName(device.firmware))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .font(.dm(.subheadline, 14))
+                    .foregroundStyle(Theme.fg2)
                     .lineLimit(1)
             }
             Spacer(minLength: 8)
@@ -158,7 +153,7 @@ struct StatusPill: View {
                     .foregroundStyle(Theme.warn)
                     .accessibilityLabel("Wartet auf den Server")
             }
-            Badge(text: visible ? "Im WLAN" : "Nicht gefunden", color: visible ? Theme.accent : Theme.fg2)
+            Badge(text: visible ? "Im WLAN" : "Nicht gefunden", color: visible ? Theme.ok : Theme.fg2)
         }
         .accessibilityElement(children: .combine)
     }
